@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Invisible Middle — Cost Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --stone-50:  #f6f5f1;
+  --stone-100: #eceae3;
+  --stone-200: #d6d3c8;
+  --stone-400: #a8a396;
+  --stone-600: #726d62;
+  --stone-800: #3d3a33;
+  --stone-900: #201f1b;
+  --salt-50:   #f2f4ef;
+  --salt-100:  #e3e7dc;
+  --salt-200:  #c8d0bc;
+  --salt-400:  #93a282;
+  --salt-600:  #637355;
+  --salt-700:  #4e5b42;
+  --salt-800:  #344030;
+  --salt-900:  #1c2419;
+  --warm-white:#faf9f6;
+  --bg:        var(--warm-white);
+  --bg-surface:var(--stone-50);
+  --bg-tint:   var(--salt-50);
+  --ink:       var(--stone-900);
+  --ink-mid:   var(--stone-800);
+  --ink-soft:  var(--stone-600);
+  --ink-faint: var(--stone-400);
+  --accent:    var(--salt-600);
+  --accent-lt: var(--salt-50);
+  --accent-dk: var(--salt-800);
+  --border:    rgba(62,57,48,0.11);
+  --border-mid:rgba(62,57,48,0.22);
+  --warn-bg:   #f7f3e9;
+  --warn-ink:  #5a4a22;
+  --warn-bdr:  rgba(90,74,34,0.35);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{font-family:'Jost',sans-serif;font-weight:300;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.65}
+.page{max-width:760px;margin:0 auto;padding:0 2rem 5rem;position:relative;z-index:1}
+
+.site-header{padding:2.75rem 0 2rem;margin-bottom:1.75rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:2rem}
+.eyebrow{font-family:'Jost',sans-serif;font-weight:400;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:0.625rem}
+.site-title{font-family:'Libre Baskerville',serif;font-size:2.125rem;font-weight:400;line-height:1.1;color:var(--ink);margin-bottom:0.5rem;letter-spacing:-0.01em}
+.site-title em{font-style:italic;color:var(--accent)}
+.site-subtitle{font-size:0.9375rem;font-weight:300;color:var(--ink-soft);max-width:400px;line-height:1.55}
+.header-badge{flex-shrink:0;border:1px solid var(--border-mid);padding:0.75rem 1rem;text-align:center;display:none;background:var(--bg-surface)}
+@media(min-width:540px){.header-badge{display:block}}
+.badge-num{font-family:'Libre Baskerville',serif;font-size:1.625rem;color:var(--accent-dk);display:block;line-height:1;margin-bottom:4px}
+.badge-label{font-family:'Jost',sans-serif;font-weight:400;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
+
+.caveat-banner{background:var(--warn-bg);border-left:2px solid var(--warn-bdr);padding:0.875rem 1.125rem;margin-bottom:2rem;font-size:0.8125rem;color:var(--warn-ink);line-height:1.6}
+.caveat-banner strong{font-weight:500}
+
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:2.25rem;overflow-x:auto;gap:0}
+.tab{padding:0.625rem 1.25rem;font-family:'Jost',sans-serif;font-weight:400;font-size:0.8125rem;letter-spacing:0.04em;color:var(--ink-faint);background:none;border:none;border-bottom:1.5px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap;transition:color 0.15s}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent)}
+.tab.locked{cursor:not-allowed;opacity:0.45}
+.tab.locked .lock-icon{font-size:10px;margin-left:4px;vertical-align:middle}
+
+.panel{display:none}
+.panel.active{display:block}
+
+.section-label{font-family:'Jost',sans-serif;font-weight:400;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 1.125rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+
+.slider-row{display:flex;align-items:center;gap:1rem;margin-bottom:0.9rem}
+.slider-row label{font-size:0.875rem;font-weight:300;color:var(--ink-mid);flex:1;line-height:1.4;min-width:0}
+.slider-row input[type=range]{-webkit-appearance:none;appearance:none;width:130px;flex-shrink:0;height:2px;background:var(--stone-200);border-radius:1px;outline:none}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);box-shadow:0 0 0 1px var(--accent)}
+.slider-val{font-family:'Jost',sans-serif;font-weight:400;font-size:0.8125rem;color:var(--ink);min-width:86px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+
+.breakdown{background:var(--bg-surface);border:1px solid var(--border);padding:1.375rem 1.375rem 1rem;margin-top:1.5rem}
+.breakdown-intro{font-size:0.75rem;font-weight:300;color:var(--ink-soft);margin-bottom:1rem;line-height:1.5}
+.breakdown-intro strong{font-weight:500;color:var(--ink-mid)}
+.cost-row{display:flex;justify-content:space-between;align-items:flex-start;padding:0.5625rem 0;border-bottom:1px solid var(--border);gap:1rem}
+.cost-row:last-of-type{border-bottom:none}
+.cost-label{font-size:0.875rem;font-weight:300;color:var(--ink-mid)}
+.cost-source{font-size:0.6875rem;color:var(--ink-faint);margin-top:2px;font-style:italic}
+.cost-amt{font-size:0.875rem;font-weight:400;color:var(--ink);flex-shrink:0;font-variant-numeric:tabular-nums}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;margin-top:1.125rem;padding-top:1.125rem;border-top:1px solid var(--border-mid)}
+.total-label{font-family:'Jost',sans-serif;font-weight:400;font-size:9.5px;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-soft)}
+.total-amt{font-family:'Libre Baskerville',serif;font-size:2rem;font-weight:400;color:var(--ink);letter-spacing:-0.01em}
+.total-per{font-size:0.6875rem;font-weight:300;color:var(--ink-soft);margin-top:3px;text-align:right}
+
+.inline-caveat{font-size:0.75rem;font-weight:300;color:var(--warn-ink);margin-top:1rem;padding:0.75rem 1rem;background:var(--warn-bg);border-left:2px solid var(--warn-bdr);line-height:1.6}
+
+.gate-panel{display:none}
+.gate-panel.active{display:block}
+.gate-outer{border:1px solid var(--border);background:var(--bg-surface);padding:2.5rem 2rem;margin:1.5rem auto;max-width:480px;text-align:center}
+.gate-eyebrow{font-family:'Jost',sans-serif;font-weight:400;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem}
+.gate-title{font-family:'Libre Baskerville',serif;font-size:1.375rem;font-weight:400;color:var(--ink);margin-bottom:0.625rem;line-height:1.25}
+.gate-sub{font-size:0.875rem;font-weight:300;color:var(--ink-soft);line-height:1.6;margin-bottom:1.75rem}
+.gate-features{list-style:none;text-align:left;margin-bottom:2rem;display:inline-block;width:100%}
+.gate-features li{font-size:0.875rem;font-weight:300;color:var(--ink-mid);padding:0.4rem 0;display:flex;align-items:flex-start;gap:0.75rem;line-height:1.45;border-bottom:1px solid var(--border)}
+.gate-features li:last-child{border-bottom:none}
+.gate-features li::before{content:'—';color:var(--accent);flex-shrink:0;font-weight:400}
+
+/* ════════════════════════════════════════════════════════════════
+   FORM LINK — ACTION REQUIRED BEFORE PUBLISHING
+   Find the <a> tag below with href="REPLACE_WITH_YOUR_SYSTEME_IO_URL"
+   and replace that value with your Systeme.io opt-in page URL.
+   Example: href="https://yourname.systeme.io/invisible-middle-optin"
+   That page should collect name + email and then redirect the
+   prospect to your full tool URL as the thank-you destination.
+   ════════════════════════════════════════════════════════════════ */
+.gate-cta-link{display:block;width:100%;padding:0.75rem 1.5rem;font-family:'Jost',sans-serif;font-weight:400;font-size:0.9375rem;letter-spacing:0.04em;background:var(--accent);color:var(--warm-white);border:none;cursor:pointer;text-decoration:none;transition:background 0.15s;text-align:center}
+.gate-cta-link:hover{background:var(--accent-dk)}
+.gate-privacy{font-size:0.6875rem;font-weight:300;color:var(--ink-faint);margin-top:0.75rem;font-style:italic}
+
+.teaser-strip{margin-top:2.5rem;border:1px solid var(--border);border-top:2px solid var(--accent);padding:1.5rem;background:var(--bg-tint)}
+.teaser-label{font-family:'Jost',sans-serif;font-weight:400;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.625rem}
+.teaser-title{font-family:'Libre Baskerville',serif;font-size:1.125rem;font-weight:400;color:var(--ink);margin-bottom:0.625rem;line-height:1.3}
+.teaser-text{font-size:0.875rem;font-weight:300;color:var(--ink-soft);line-height:1.65;margin-bottom:1.375rem}
+.teaser-items{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin-bottom:1.375rem}
+.teaser-item{background:var(--bg);border:1px solid var(--border);padding:0.875rem 1rem}
+.teaser-item-label{font-family:'Jost',sans-serif;font-weight:400;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.375rem}
+.teaser-item-text{font-size:0.8125rem;font-weight:300;color:var(--ink-soft);line-height:1.45}
+.unlock-btn{width:100%;padding:0.75rem;font-family:'Jost',sans-serif;font-weight:400;font-size:0.9375rem;letter-spacing:0.04em;background:var(--accent);color:var(--warm-white);border:none;cursor:pointer;transition:background 0.15s}
+.unlock-btn:hover{background:var(--accent-dk)}
+
+.site-footer{margin-top:3.5rem;padding-top:1.5rem;border-top:1px solid var(--border);font-size:0.75rem;font-weight:300;color:var(--ink-faint);line-height:1.6;display:flex;justify-content:space-between;gap:2rem;flex-wrap:wrap}
+.footer-brand{font-family:'Libre Baskerville',serif;font-size:0.9375rem;color:var(--ink-soft);margin-bottom:0.25rem}
+
+@media(max-width:540px){
+  .site-title{font-size:1.625rem}
+  .slider-row input[type=range]{width:90px}
+  .slider-val{min-width:72px}
+  .gate-outer{padding:1.75rem 1.25rem}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="site-header">
+    <div>
+      <div class="eyebrow">Organisational diagnostic tool</div>
+      <h1 class="site-title">The <em>Invisible</em> Middle</h1>
+      <p class="site-subtitle">Calculate the cost of losing women aged 40–60 from your organisation</p>
+    </div>
+    <div class="header-badge">
+      <span class="badge-num" id="badge-num">—</span>
+      <span class="badge-label">est. annual cost</span>
+    </div>
+  </header>
+
+  <div class="caveat-banner">
+    <strong>Indicative estimates only.</strong> All figures are modelled from published sector benchmarks — not your organisation's actual data. These numbers are designed to prompt the right questions. Verifying them requires structured internal analysis.
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" onclick="switchTab(0)" role="tab">Turnover cost</button>
+    <button class="tab locked" onclick="promptUnlock()" role="tab">Disengagement cost <span class="lock-icon">🔒</span></button>
+    <button class="tab locked" onclick="promptUnlock()" role="tab">Risk diagnostic <span class="lock-icon">🔒</span></button>
+    <button class="tab locked" onclick="promptUnlock()" role="tab">Benchmarks <span class="lock-icon">🔒</span></button>
+  </nav>
+
+  <div id="panel0" class="panel active" role="tabpanel">
+    <div class="section-label">Your organisation</div>
+    <div class="slider-row"><label>Headcount</label><input type="range" id="s_staff" min="100" max="5000" step="50" value="500" oninput="calc()"><span class="slider-val" id="v_staff">500</span></div>
+    <div class="slider-row"><label>Women aged 40–60 as % of workforce</label><input type="range" id="s_pct" min="5" max="50" step="1" value="20" oninput="calc()"><span class="slider-val" id="v_pct">20%</span></div>
+    <div class="slider-row"><label>Annual turnover rate for this cohort (%)</label><input type="range" id="s_turn" min="2" max="30" step="1" value="12" oninput="calc()"><span class="slider-val" id="v_turn">12%</span></div>
+    <div class="slider-row"><label>Average salary, this cohort ($AUD)</label><input type="range" id="s_sal" min="60000" max="200000" step="5000" value="100000" oninput="calc()"><span class="slider-val" id="v_sal">$100,000</span></div>
+    <div class="slider-row"><label>% in management or senior roles</label><input type="range" id="s_mgr" min="5" max="60" step="1" value="25" oninput="calc()"><span class="slider-val" id="v_mgr">25%</span></div>
+    <div class="breakdown" id="breakdown_turn"></div>
+    <div class="inline-caveat">Recruitment cost uses AHRI's 1.5× salary benchmark. Vacancy and ramp-up draw from HRD Magazine AU and Mellon/Gallup research. Knowledge loss applies to the management sub-cohort only. Sector averages — your actual figures may differ. A formal audit replaces these assumptions with your verified data.</div>
+
+    <div class="teaser-strip">
+      <div class="teaser-label">There's more to the picture</div>
+      <div class="teaser-title">Turnover is only part of what you're losing</div>
+      <div class="teaser-text">The women who stay but disengage cost organisations as much — or more — than those who exit. The full diagnostic includes a disengagement cost calculator, a 10-question risk diagnostic, and a benchmarks panel drawing on WGEA, AHRI, ABS and Gallup data.</div>
+      <div class="teaser-items">
+        <div class="teaser-item">
+          <div class="teaser-item-label">Disengagement cost</div>
+          <div class="teaser-item-text">Model the productivity cost of women who are present but withdrawn — including the non-promotable task burden</div>
+        </div>
+        <div class="teaser-item">
+          <div class="teaser-item-label">Risk diagnostic</div>
+          <div class="teaser-item-text">10 questions across exit, disengagement, and visibility risk — with a scored verdict and priority actions</div>
+        </div>
+        <div class="teaser-item">
+          <div class="teaser-item-label">Benchmarks</div>
+          <div class="teaser-item-text">National and Victorian data on representation, pay gap, and disengagement rates for this cohort</div>
+        </div>
+      </div>
+      <button class="unlock-btn" onclick="showGate()">Unlock the full diagnostic →</button>
+    </div>
+  </div>
+
+  <div id="gate-panel" class="gate-panel" role="region" aria-label="Unlock full diagnostic">
+    <div class="gate-outer">
+      <div class="gate-eyebrow">Full diagnostic access</div>
+      <h2 class="gate-title">There's a cost you're not calculating</h2>
+      <p class="gate-sub">The women who stay but disengage are invisible in your HR data — and often more expensive than the ones who leave. Get access to the disengagement calculator, risk diagnostic, and full benchmark set.</p>
+      <ul class="gate-features">
+        <li>Disengagement cost calculator — model the silent losses</li>
+        <li>10-question risk diagnostic with scored verdict</li>
+        <li>National &amp; Victorian benchmarks (WGEA, AHRI, ABS, Gallup)</li>
+        <li>Priority audit actions tailored to your risk profile</li>
+      </ul>
+
+      <!-- ════════════════════════════════════════════════════════════
+           FORM LINK — ACTION REQUIRED BEFORE PUBLISHING
+           Replace REPLACE_WITH_YOUR_SYSTEME_IO_URL below with the
+           URL of your Systeme.io opt-in page.
+           That page should collect name + work email, then redirect
+           to the full tool (invisible-middle-full-tool.html) as
+           the thank-you / success destination.
+           ════════════════════════════════════════════════════════════ -->
+      <a href="REPLACE_WITH_YOUR_SYSTEME_IO_URL" class="gate-cta-link">
+        Get access to the full diagnostic →
+      </a>
+
+      <p class="gate-privacy">No spam. Used only to provide access and relevant follow-up.</p>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div>
+      <div class="footer-brand">The Invisible Middle</div>
+      <div>A cross-sector gender equity initiative focused on Australia</div>
+    </div>
+    <div style="text-align:right">
+      <div>Sources: AHRI, WGEA, ABS, CIPD, Gallup, McKinsey, VPSC</div>
+      <div style="margin-top:3px">All figures indicative only</div>
+    </div>
+  </footer>
+
+</div>
+<script>
+function fmt(n){return '$'+Math.round(n).toLocaleString('en-AU')}
+function fmtShort(n){
+  if(n>=1000000)return '$'+(n/1000000).toFixed(1)+'M';
+  if(n>=1000)return '$'+Math.round(n/1000)+'K';
+  return fmt(n);
+}
+function calc(){
+  const staff=+document.getElementById('s_staff').value;
+  const pct=+document.getElementById('s_pct').value/100;
+  const turn=+document.getElementById('s_turn').value/100;
+  const sal=+document.getElementById('s_sal').value;
+  const mgr=+document.getElementById('s_mgr').value/100;
+  document.getElementById('v_staff').textContent=Math.round(staff).toLocaleString('en-AU');
+  document.getElementById('v_pct').textContent=Math.round(pct*100)+'%';
+  document.getElementById('v_turn').textContent=Math.round(turn*100)+'%';
+  document.getElementById('v_sal').textContent='$'+Math.round(sal).toLocaleString('en-AU');
+  document.getElementById('v_mgr').textContent=Math.round(mgr*100)+'%';
+  const cohort=Math.round(staff*pct);
+  const leavers=Math.max(1,Math.round(cohort*turn));
+  const mgrL=Math.round(leavers*mgr);
+  const recruit=leavers*sal*1.5;
+  const vacancy=leavers*(sal/52)*8;
+  const rampup=leavers*sal*0.25;
+  const knowledge=mgrL*sal*0.30;
+  const mentoring=mgrL*sal*0.10;
+  const total=recruit+vacancy+rampup+knowledge+mentoring;
+  document.getElementById('badge-num').textContent=fmtShort(total);
+  document.getElementById('breakdown_turn').innerHTML=`
+    <div class="breakdown-intro">Based on an estimated <strong>${leavers}</strong> departure${leavers!==1?'s':''} per year from a cohort of <strong>${cohort}</strong> women aged 40\u201360</div>
+    <div class="cost-row"><div><div class="cost-label">Recruitment &amp; onboarding</div><div class="cost-source">AHRI: 1.5\u00d7 salary benchmark</div></div><span class="cost-amt">${fmt(recruit)}</span></div>
+    <div class="cost-row"><div><div class="cost-label">Vacancy period (8-week average)</div><div class="cost-source">HRD Magazine AU</div></div><span class="cost-amt">${fmt(vacancy)}</span></div>
+    <div class="cost-row"><div><div class="cost-label">Productivity ramp-up (6 months)</div><div class="cost-source">Mellon / Gallup</div></div><span class="cost-amt">${fmt(rampup)}</span></div>
+    <div class="cost-row"><div><div class="cost-label">Institutional knowledge loss (managers only)</div><div class="cost-source">Deloitte / AHRI</div></div><span class="cost-amt">${fmt(knowledge)}</span></div>
+    <div class="cost-row"><div><div class="cost-label">Mentoring burden on remaining team</div><div class="cost-source">Gallup engagement data</div></div><span class="cost-amt">${fmt(mentoring)}</span></div>
+    <div class="total-row"><div><div class="total-label">Estimated annual turnover cost</div></div><div style="text-align:right"><div class="total-amt">${fmt(total)}</div><div class="total-per">${fmt(total/leavers)} per departing employee</div></div></div>`;
+}
+function switchTab(i){
+  document.getElementById('gate-panel').classList.remove('active');
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
+  document.querySelectorAll('.tab:not(.locked)').forEach((t,j)=>t.classList.toggle('active',i===j));
+}
+function showGate(){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('gate-panel').classList.add('active');
+  document.getElementById('gate-panel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function promptUnlock(){ showGate(); }
+calc();
+</script>
+</body>
+</html>
